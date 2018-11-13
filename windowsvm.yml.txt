@@ -1,0 +1,79 @@
+---
+ - name :  Create a full stack windows Virtual Machine
+   hosts  :  localhost
+   gather_facts : no
+
+   tasks :
+     - name : Create a Resource group
+       azure_rm_resourcegroup :
+         name : Test-MS-RG
+         location : EastUs2
+         subscription_id : ed5611a6-3424-4338-8a17-0741519b425a
+
+     - name : Create Availability Set
+       azure_rm_availabilityset :
+         name : Test-MS-AVSET
+         resource_group : Test-MS-RG
+         location : EastUs2
+
+     - name  :  Creating NSG
+       azure_rm_securitygroup  :
+         name  :  Test-MS-SG
+         resource_group :  Test-MS-RG
+         rules  :
+           - name  :  Allow_SSH
+             protocol  :  'Tcp'
+             source_port_range  :  '*'
+             destination_port_range  :  '22'
+             priority  : '100'
+           - name  :  Allow_RDP
+             protocol  :  '*'
+             source_port_range  :  '*'
+             destination_port_range  :  '3389'
+             priority  :  '101'
+
+     - name : Create a vnet
+       azure_rm_virtualnetwork :
+         name : Test-MS-VN
+         location : EastUs2
+         resource_group : Test-MS-RG
+         address_prefixes_cidr : '10.1.0.0/16'
+
+     - name : Create a subnet
+       azure_rm_subnet :
+         name : Test-MS-SN
+         resource_group : Test-MS-RG
+         virtual_network_name : Test-MS-VN
+         security_group : Test-MS-SG
+         address_prefix_cidr  :  '10.1.1.0/24'
+
+     - name  :  Virtual Network Interface
+       azure_rm_networkinterface  :
+         name  :  Test-MS-NIC
+         resource_group  :  Test-MS-RG
+         subnet_name  :  Test-MS-SN
+         virtual_network_name  :  Test-MS-VN
+         ip_configurations  :
+           - name  :  Test-MS-NIC-IP
+             public_ip_address_name : Test-MS-NIC-IP2
+             public_ip_allocation_method : Static
+         security_group : Test-MS-SG
+
+     - name : Create a windows virtual machine
+       azure_rm_virtualmachine :
+         os_type: Windows
+         name : Test-MS-VM
+         resource_group : Test-MS-RG
+         network_interfaces : Test-MS-NIC
+         virtual_network : Test-MS-VN
+         subnet : Test-MS-SN
+         availability_set : Test-MS-AVSET
+         admin_username : "testmsvm"
+         admin_password : "Welcome1"
+         vm_size : Standard_D1
+         image :
+           publisher : MicrosoftWindowsServer
+           sku :  '2016-Datacenter'
+           offer : WindowsServer
+           version :  latest
+
